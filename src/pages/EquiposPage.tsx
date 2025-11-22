@@ -125,8 +125,11 @@ export const EquiposPage = () => {
     },
     {
       header: 'Cliente',
-      accessor: (row: Equipo) =>
-        row.cliente ? `${row.cliente.nombre} ${row.cliente.apellido}` : '-',
+      accessor: (row: Equipo) => {
+        // Buscar el cliente en la lista cargada usando clienteId
+        const cliente = clientes.find(c => c.id === row.clienteId);
+        return cliente ? `${cliente.nombre} ${cliente.apellido}` : '-';
+      },
     },
   ];
 

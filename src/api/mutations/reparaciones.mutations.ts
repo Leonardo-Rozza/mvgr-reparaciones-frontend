@@ -10,7 +10,10 @@ const createReparacion = async (reparacion: ReparacionCreate): Promise<Reparacio
 
 // Actualizar reparación
 const updateReparacion = async (reparacion: ReparacionUpdate): Promise<Reparacion> => {
-  const { data } = await apiClient.put<Reparacion>(`/reparaciones/${reparacion.id}`, reparacion);
+  // Extraer el id del objeto y enviar el resto en el body
+  const { id, ...updateData } = reparacion;
+  console.log('Actualizando reparación:', { id, updateData });
+  const { data } = await apiClient.put<Reparacion>(`/reparaciones/${id}`, updateData);
   return data;
 };
 

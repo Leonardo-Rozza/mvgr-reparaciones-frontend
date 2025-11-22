@@ -13,7 +13,7 @@ import {
   useUpdateReparacionMutation,
   useDeleteReparacionMutation,
 } from '../api/mutations/reparaciones.mutations';
-import type { Reparacion, ReparacionCreate } from '../types';
+import type { Reparacion, ReparacionCreate, ReparacionUpdate } from '../types';
 
 // Schema de validación
 const reparacionSchema = z.object({
@@ -74,26 +74,33 @@ export const ReparacionesPage = () => {
   const onSubmit = async (data: ReparacionFormData) => {
     try {
       // Limpiar campos opcionales vacíos y convertir a formato del backend
-      const payload: ReparacionCreate = {
+      const basePayload = {
         descripcionProblema: data.descripcionProblema,
         equipoId: data.equipoId,
         fechaIngreso: data.fechaIngreso && data.fechaIngreso !== '' ? data.fechaIngreso : undefined,
         fechaEstimadaEntrega: data.fechaEstimadaEntrega && data.fechaEstimadaEntrega !== '' ? data.fechaEstimadaEntrega : undefined,
         fechaEntrega: data.fechaEntrega && data.fechaEntrega !== '' ? data.fechaEntrega : undefined,
-        estado: data.estado,
+        estado: data.estado || undefined,
         precioEstimado: data.precioEstimado !== '' ? Number(data.precioEstimado) : undefined,
         precioFinal: data.precioFinal !== '' ? Number(data.precioFinal) : undefined,
       };
 
-      console.log('Payload a enviar:', payload);
+      // Remover campos undefined para no enviarlos
+      const cleanPayload = Object.fromEntries(
+        Object.entries(basePayload).filter(([_, v]) => v !== undefined)
+      ) as Partial<ReparacionCreate>;
+
+      console.log('Payload a enviar:', cleanPayload);
 
       if (editingReparacion) {
-        await updateMutation.mutateAsync({
+        // Para update, enviar solo los campos que se están actualizando
+        const updatePayload: ReparacionUpdate = {
           id: editingReparacion.id,
-          ...payload,
-        });
+          ...cleanPayload,
+        };
+        await updateMutation.mutateAsync(updatePayload);
       } else {
-        await createMutation.mutateAsync(payload);
+        await createMutation.mutateAsync(cleanPayload as ReparacionCreate);
       }
       handleCloseModal();
     } catch (error) {

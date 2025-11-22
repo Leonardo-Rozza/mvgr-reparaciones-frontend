@@ -93,8 +93,16 @@ export interface ReparacionCreate {
   equipoId: number;
 }
 
-export interface ReparacionUpdate extends Partial<ReparacionCreate> {
+export interface ReparacionUpdate {
   id: number;
+  descripcionProblema?: string;
+  fechaIngreso?: string;
+  fechaEstimadaEntrega?: string;
+  fechaEntrega?: string;
+  estado?: 'INGRESADO' | 'EN_PROCESO' | 'ESPERANDO_REPUESTO' | 'COMPLETADO' | 'ENTREGADO';
+  precioEstimado?: number;
+  precioFinal?: number;
+  equipoId?: number;
 }
 
 // ========== REPUESTO ==========
