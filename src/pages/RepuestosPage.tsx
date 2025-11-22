@@ -7,6 +7,7 @@ import { DataTable } from '../components/DataTable';
 import { Modal } from '../components/Modal';
 import { FormField } from '../components/FormField';
 import { useRepuestosQuery } from '../api/queries/repuestos.queries';
+import { useReparacionesQuery } from '../api/queries/reparaciones.queries';
 import {
   useCreateRepuestoMutation,
   useUpdateRepuestoMutation,
@@ -17,10 +18,9 @@ import type { Repuesto, RepuestoCreate } from '../types';
 // Schema de validación
 const repuestoSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
-  descripcion: z.string().optional(),
+  descripcion: z.string().optional().or(z.literal('')),
   precio: z.number().min(0, 'El precio debe ser mayor o igual a 0'),
-  stock: z.number().int().min(0, 'El stock debe ser mayor o igual a 0'),
-  categoria: z.string().optional(),
+  reparacionId: z.union([z.number().int().min(1), z.literal('')]).optional(),
 });
 
 type RepuestoFormData = z.infer<typeof repuestoSchema>;
@@ -30,6 +30,7 @@ export const RepuestosPage = () => {
   const [editingRepuesto, setEditingRepuesto] = useState<Repuesto | null>(null);
 
   const { data: repuestos = [], isLoading } = useRepuestosQuery();
+  const { data: reparaciones = [] } = useReparacionesQuery();
   const createMutation = useCreateRepuestoMutation();
   const updateMutation = useUpdateRepuestoMutation();
   const deleteMutation = useDeleteRepuestoMutation();
@@ -44,23 +45,32 @@ export const RepuestosPage = () => {
     defaultValues: editingRepuesto
       ? {
           nombre: editingRepuesto.nombre,
-          descripcion: editingRepuesto.descripcion,
+          descripcion: editingRepuesto.descripcion || '',
           precio: editingRepuesto.precio,
-          stock: editingRepuesto.stock,
-          categoria: editingRepuesto.categoria,
+          reparacionId: editingRepuesto.reparacionId || '',
         }
       : undefined,
   });
 
   const onSubmit = async (data: RepuestoFormData) => {
     try {
+      // Limpiar campos opcionales vacíos
+      const payload: RepuestoCreate = {
+        nombre: data.nombre,
+        precio: data.precio,
+        descripcion: data.descripcion && data.descripcion.trim() !== '' ? data.descripcion : undefined,
+        reparacionId: (data.reparacionId !== undefined && data.reparacionId !== '') 
+          ? (typeof data.reparacionId === 'number' ? data.reparacionId : Number(data.reparacionId))
+          : undefined,
+      };
+
       if (editingRepuesto) {
         await updateMutation.mutateAsync({
           id: editingRepuesto.id,
-          ...data,
+          ...payload,
         });
       } else {
-        await createMutation.mutateAsync(data as RepuestoCreate);
+        await createMutation.mutateAsync(payload);
       }
       handleCloseModal();
     } catch (error) {
@@ -79,10 +89,9 @@ export const RepuestosPage = () => {
     setIsModalOpen(true);
     reset({
       nombre: repuesto.nombre,
-      descripcion: repuesto.descripcion,
+      descripcion: repuesto.descripcion || '',
       precio: repuesto.precio,
-      stock: repuesto.stock,
-      categoria: repuesto.categoria,
+      reparacionId: repuesto.reparacionId || '',
     });
   };
 
@@ -108,16 +117,8 @@ export const RepuestosPage = () => {
       accessor: (row: Repuesto) => `$${row.precio.toFixed(2)}`,
     },
     {
-      header: 'Stock',
-      accessor: (row: Repuesto) => (
-        <span className={row.stock < 10 ? 'text-red-600 font-semibold' : ''}>
-          {row.stock}
-        </span>
-      ),
-    },
-    {
-      header: 'Categoría',
-      accessor: (row: Repuesto) => row.categoria || '-',
+      header: 'Reparación ID',
+      accessor: (row: Repuesto) => row.reparacionId || '-',
     },
   ];
 
@@ -183,45 +184,35 @@ export const RepuestosPage = () => {
               />
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Precio" error={errors.precio?.message} required htmlFor="precio">
-                <input
-                  id="precio"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register('precio', { valueAsNumber: true })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                    errors.precio ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="0.00"
-                />
-              </FormField>
-
-              <FormField label="Stock" error={errors.stock?.message} required htmlFor="stock">
-                <input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  {...register('stock', { valueAsNumber: true })}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                    errors.stock ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="0"
-                />
-              </FormField>
-            </div>
-
-            <FormField label="Categoría" error={errors.categoria?.message} htmlFor="categoria">
+            <FormField label="Precio" error={errors.precio?.message} required htmlFor="precio">
               <input
-                id="categoria"
-                type="text"
-                {...register('categoria')}
+                id="precio"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register('precio', { valueAsNumber: true })}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.categoria ? 'border-red-300' : 'border-gray-300'
+                  errors.precio ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="Ej: Pantalla, Batería, Cargador"
+                placeholder="0.00"
               />
+            </FormField>
+
+            <FormField label="Reparación ID" error={errors.reparacionId?.message} htmlFor="reparacionId">
+              <select
+                id="reparacionId"
+                {...register('reparacionId', { valueAsNumber: true })}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
+                  errors.reparacionId ? 'border-red-300' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Sin reparación asociada</option>
+                {reparaciones.map((reparacion) => (
+                  <option key={reparacion.id} value={reparacion.id}>
+                    Reparación #{reparacion.id} - {reparacion.descripcionProblema.substring(0, 30)}...
+                  </option>
+                ))}
+              </select>
             </FormField>
 
             <div className="flex justify-end gap-3 pt-4">

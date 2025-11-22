@@ -16,11 +16,11 @@ import type { Cliente, ClienteCreate } from '../types';
 
 // Schema de validación
 const clienteSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido').min(2, 'El nombre debe tener al menos 2 caracteres'),
-  apellido: z.string().min(1, 'El apellido es requerido').min(2, 'El apellido debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  telefono: z.string().min(1, 'El teléfono es requerido'),
-  direccion: z.string().optional(),
+  nombre: z.string().min(1, 'El nombre es requerido').max(60, 'El nombre no puede exceder 60 caracteres'),
+  apellido: z.string().min(1, 'El apellido es requerido').max(60, 'El apellido no puede exceder 60 caracteres'),
+  email: z.string().email('Email inválido').max(120, 'El email no puede exceder 120 caracteres').optional().or(z.literal('')),
+  telefono: z.string().min(1, 'El teléfono es requerido').max(20, 'El teléfono no puede exceder 20 caracteres'),
+  direccion: z.string().max(255, 'La dirección no puede exceder 255 caracteres').optional().or(z.literal('')),
 });
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
@@ -54,13 +54,22 @@ export const ClientesPage = () => {
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
+      // Limpiar campos opcionales vacíos
+      const payload: ClienteCreate = {
+        nombre: data.nombre,
+        apellido: data.apellido,
+        telefono: data.telefono,
+        email: data.email && data.email.trim() !== '' ? data.email : undefined,
+        direccion: data.direccion && data.direccion.trim() !== '' ? data.direccion : undefined,
+      };
+
       if (editingCliente) {
         await updateMutation.mutateAsync({
           id: editingCliente.id,
-          ...data,
+          ...payload,
         });
       } else {
-        await createMutation.mutateAsync(data as ClienteCreate);
+        await createMutation.mutateAsync(payload);
       }
       handleCloseModal();
     } catch (error) {
@@ -172,7 +181,7 @@ export const ClientesPage = () => {
               </FormField>
             </div>
 
-            <FormField label="Email" error={errors.email?.message} required htmlFor="email">
+            <FormField label="Email" error={errors.email?.message} htmlFor="email">
               <input
                 id="email"
                 type="email"

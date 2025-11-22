@@ -17,10 +17,11 @@ import type { Equipo, EquipoCreate } from '../types';
 
 // Schema de validación
 const equipoSchema = z.object({
-  tipo: z.string().min(1, 'El tipo es requerido'),
-  marca: z.string().min(1, 'La marca es requerida'),
-  modelo: z.string().min(1, 'El modelo es requerido'),
-  numeroSerie: z.string().optional(),
+  marca: z.string().min(1, 'La marca es requerida').max(60, 'La marca no puede exceder 60 caracteres'),
+  modelo: z.string().min(1, 'El modelo es requerido').max(60, 'El modelo no puede exceder 60 caracteres'),
+  imei: z.string().max(30, 'El IMEI no puede exceder 30 caracteres').optional().or(z.literal('')),
+  color: z.string().max(40, 'El color no puede exceder 40 caracteres').optional().or(z.literal('')),
+  descripcion: z.string().max(255, 'La descripción no puede exceder 255 caracteres').optional().or(z.literal('')),
   clienteId: z.number().min(1, 'Debe seleccionar un cliente'),
 });
 
@@ -45,10 +46,11 @@ export const EquiposPage = () => {
     resolver: zodResolver(equipoSchema),
     defaultValues: editingEquipo
       ? {
-          tipo: editingEquipo.tipo,
           marca: editingEquipo.marca,
           modelo: editingEquipo.modelo,
-          numeroSerie: editingEquipo.numeroSerie,
+          imei: editingEquipo.imei || '',
+          color: editingEquipo.color || '',
+          descripcion: editingEquipo.descripcion || '',
           clienteId: editingEquipo.clienteId,
         }
       : undefined,
@@ -56,13 +58,23 @@ export const EquiposPage = () => {
 
   const onSubmit = async (data: EquipoFormData) => {
     try {
+      // Limpiar campos opcionales vacíos
+      const payload: EquipoCreate = {
+        marca: data.marca,
+        modelo: data.modelo,
+        clienteId: data.clienteId,
+        imei: data.imei && data.imei.trim() !== '' ? data.imei : undefined,
+        color: data.color && data.color.trim() !== '' ? data.color : undefined,
+        descripcion: data.descripcion && data.descripcion.trim() !== '' ? data.descripcion : undefined,
+      };
+
       if (editingEquipo) {
         await updateMutation.mutateAsync({
           id: editingEquipo.id,
-          ...data,
+          ...payload,
         });
       } else {
-        await createMutation.mutateAsync(data as EquipoCreate);
+        await createMutation.mutateAsync(payload);
       }
       handleCloseModal();
     } catch (error) {
@@ -80,10 +92,11 @@ export const EquiposPage = () => {
     setEditingEquipo(equipo);
     setIsModalOpen(true);
     reset({
-      tipo: equipo.tipo,
       marca: equipo.marca,
       modelo: equipo.modelo,
-      numeroSerie: equipo.numeroSerie,
+      imei: equipo.imei || '',
+      color: equipo.color || '',
+      descripcion: equipo.descripcion || '',
       clienteId: equipo.clienteId,
     });
   };
@@ -100,12 +113,15 @@ export const EquiposPage = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' as const },
-    { header: 'Tipo', accessor: 'tipo' as const },
     { header: 'Marca', accessor: 'marca' as const },
     { header: 'Modelo', accessor: 'modelo' as const },
     {
-      header: 'N° Serie',
-      accessor: (row: Equipo) => row.numeroSerie || '-',
+      header: 'IMEI',
+      accessor: (row: Equipo) => row.imei || '-',
+    },
+    {
+      header: 'Color',
+      accessor: (row: Equipo) => row.color || '-',
     },
     {
       header: 'Cliente',
@@ -154,24 +170,13 @@ export const EquiposPage = () => {
           size="md"
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FormField label="Tipo" error={errors.tipo?.message} required htmlFor="tipo">
-              <input
-                id="tipo"
-                type="text"
-                {...register('tipo')}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.tipo ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="Ej: Laptop, Celular, Tablet"
-              />
-            </FormField>
-
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Marca" error={errors.marca?.message} required htmlFor="marca">
                 <input
                   id="marca"
                   type="text"
                   {...register('marca')}
+                  maxLength={60}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
                     errors.marca ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -183,6 +188,7 @@ export const EquiposPage = () => {
                   id="modelo"
                   type="text"
                   {...register('modelo')}
+                  maxLength={60}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
                     errors.modelo ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -190,14 +196,42 @@ export const EquiposPage = () => {
               </FormField>
             </div>
 
-            <FormField label="N° Serie" error={errors.numeroSerie?.message} htmlFor="numeroSerie">
-              <input
-                id="numeroSerie"
-                type="text"
-                {...register('numeroSerie')}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="IMEI" error={errors.imei?.message} htmlFor="imei">
+                <input
+                  id="imei"
+                  type="text"
+                  {...register('imei')}
+                  maxLength={30}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
+                    errors.imei ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+              </FormField>
+
+              <FormField label="Color" error={errors.color?.message} htmlFor="color">
+                <input
+                  id="color"
+                  type="text"
+                  {...register('color')}
+                  maxLength={40}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
+                    errors.color ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Descripción" error={errors.descripcion?.message} htmlFor="descripcion">
+              <textarea
+                id="descripcion"
+                rows={3}
+                {...register('descripcion')}
+                maxLength={255}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.numeroSerie ? 'border-red-300' : 'border-gray-300'
+                  errors.descripcion ? 'border-red-300' : 'border-gray-300'
                 }`}
+                placeholder="Descripción adicional del equipo"
               />
             </FormField>
 

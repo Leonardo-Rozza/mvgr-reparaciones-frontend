@@ -34,7 +34,7 @@ export interface Cliente {
 export interface ClienteCreate {
   nombre: string;
   apellido: string;
-  email: string;
+  email?: string;
   telefono: string;
   direccion?: string;
 }
@@ -46,19 +46,21 @@ export interface ClienteUpdate extends Partial<ClienteCreate> {
 // ========== EQUIPO ==========
 export interface Equipo {
   id: number;
-  tipo: string;
   marca: string;
   modelo: string;
-  numeroSerie?: string;
+  imei?: string;
+  color?: string;
+  descripcion?: string;
   clienteId: number;
   cliente?: Cliente;
 }
 
 export interface EquipoCreate {
-  tipo: string;
   marca: string;
   modelo: string;
-  numeroSerie?: string;
+  imei?: string;
+  color?: string;
+  descripcion?: string;
   clienteId: number;
 }
 
@@ -69,21 +71,25 @@ export interface EquipoUpdate extends Partial<EquipoCreate> {
 // ========== REPARACION ==========
 export interface Reparacion {
   id: number;
-  descripcion: string;
-  fechaIngreso: string;
-  fechaSalida?: string;
-  estado: 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADA' | 'CANCELADA';
-  costo?: number;
+  descripcionProblema: string;
+  fechaIngreso?: string;
+  fechaEstimadaEntrega?: string;
+  fechaEntrega?: string;
+  estado?: 'INGRESADO' | 'EN_PROCESO' | 'ESPERANDO_REPUESTO' | 'COMPLETADO' | 'ENTREGADO';
+  precioEstimado?: number;
+  precioFinal?: number;
   equipoId: number;
   equipo?: Equipo;
 }
 
 export interface ReparacionCreate {
-  descripcion: string;
-  fechaIngreso: string;
-  fechaSalida?: string;
-  estado: 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADA' | 'CANCELADA';
-  costo?: number;
+  descripcionProblema: string;
+  fechaIngreso?: string;
+  fechaEstimadaEntrega?: string;
+  fechaEntrega?: string;
+  estado?: 'INGRESADO' | 'EN_PROCESO' | 'ESPERANDO_REPUESTO' | 'COMPLETADO' | 'ENTREGADO';
+  precioEstimado?: number;
+  precioFinal?: number;
   equipoId: number;
 }
 
@@ -97,16 +103,14 @@ export interface Repuesto {
   nombre: string;
   descripcion?: string;
   precio: number;
-  stock: number;
-  categoria?: string;
+  reparacionId?: number;
 }
 
 export interface RepuestoCreate {
   nombre: string;
   descripcion?: string;
   precio: number;
-  stock: number;
-  categoria?: string;
+  reparacionId?: number;
 }
 
 export interface RepuestoUpdate extends Partial<RepuestoCreate> {

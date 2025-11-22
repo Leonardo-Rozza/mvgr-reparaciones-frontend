@@ -54,8 +54,8 @@ export const DashboardPage = () => {
   const stats = {
     clientes: clientes.length,
     equipos: equipos.length,
-    reparaciones: reparaciones.filter((r) => r.estado !== 'COMPLETADA' && r.estado !== 'CANCELADA').length,
-    repuestos: repuestos.reduce((sum, r) => sum + r.stock, 0),
+    reparaciones: reparaciones.filter((r) => r.estado && r.estado !== 'COMPLETADO' && r.estado !== 'ENTREGADO').length,
+    repuestos: repuestos.length,
   };
 
   return (

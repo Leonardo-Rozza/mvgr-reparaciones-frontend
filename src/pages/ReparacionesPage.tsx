@@ -17,21 +17,24 @@ import type { Reparacion, ReparacionCreate } from '../types';
 
 // Schema de validación
 const reparacionSchema = z.object({
-  descripcion: z.string().min(1, 'La descripción es requerida'),
-  fechaIngreso: z.string().min(1, 'La fecha de ingreso es requerida'),
-  fechaSalida: z.string().optional(),
-  estado: z.enum(['PENDIENTE', 'EN_PROCESO', 'COMPLETADA', 'CANCELADA']),
-  costo: z.number().min(0).optional().or(z.literal('')),
+  descripcionProblema: z.string().min(1, 'La descripción del problema es requerida'),
+  fechaIngreso: z.string().optional().or(z.literal('')),
+  fechaEstimadaEntrega: z.string().optional().or(z.literal('')),
+  fechaEntrega: z.string().optional().or(z.literal('')),
+  estado: z.enum(['INGRESADO', 'EN_PROCESO', 'ESPERANDO_REPUESTO', 'COMPLETADO', 'ENTREGADO']).optional(),
+  precioEstimado: z.number().min(0).optional().or(z.literal('')),
+  precioFinal: z.number().min(0).optional().or(z.literal('')),
   equipoId: z.number().min(1, 'Debe seleccionar un equipo'),
 });
 
 type ReparacionFormData = z.infer<typeof reparacionSchema>;
 
 const estadoColors = {
-  PENDIENTE: 'bg-yellow-100 text-yellow-800',
+  INGRESADO: 'bg-yellow-100 text-yellow-800',
   EN_PROCESO: 'bg-blue-100 text-blue-800',
-  COMPLETADA: 'bg-green-100 text-green-800',
-  CANCELADA: 'bg-red-100 text-red-800',
+  ESPERANDO_REPUESTO: 'bg-orange-100 text-orange-800',
+  COMPLETADO: 'bg-green-100 text-green-800',
+  ENTREGADO: 'bg-purple-100 text-purple-800',
 };
 
 export const ReparacionesPage = () => {
@@ -53,26 +56,36 @@ export const ReparacionesPage = () => {
     resolver: zodResolver(reparacionSchema),
     defaultValues: editingReparacion
       ? {
-          descripcion: editingReparacion.descripcion,
-          fechaIngreso: editingReparacion.fechaIngreso.split('T')[0],
-          fechaSalida: editingReparacion.fechaSalida?.split('T')[0] || '',
+          descripcionProblema: editingReparacion.descripcionProblema,
+          fechaIngreso: editingReparacion.fechaIngreso?.split('T')[0] || '',
+          fechaEstimadaEntrega: editingReparacion.fechaEstimadaEntrega?.split('T')[0] || '',
+          fechaEntrega: editingReparacion.fechaEntrega?.split('T')[0] || '',
           estado: editingReparacion.estado,
-          costo: editingReparacion.costo || '',
+          precioEstimado: editingReparacion.precioEstimado || '',
+          precioFinal: editingReparacion.precioFinal || '',
           equipoId: editingReparacion.equipoId,
         }
       : {
-          estado: 'PENDIENTE',
+          estado: 'INGRESADO',
           fechaIngreso: new Date().toISOString().split('T')[0],
         },
   });
 
   const onSubmit = async (data: ReparacionFormData) => {
     try {
-      const payload = {
-        ...data,
-        costo: data.costo === '' ? undefined : Number(data.costo),
-        fechaSalida: data.fechaSalida === '' ? undefined : data.fechaSalida,
+      // Limpiar campos opcionales vacíos y convertir a formato del backend
+      const payload: ReparacionCreate = {
+        descripcionProblema: data.descripcionProblema,
+        equipoId: data.equipoId,
+        fechaIngreso: data.fechaIngreso && data.fechaIngreso !== '' ? data.fechaIngreso : undefined,
+        fechaEstimadaEntrega: data.fechaEstimadaEntrega && data.fechaEstimadaEntrega !== '' ? data.fechaEstimadaEntrega : undefined,
+        fechaEntrega: data.fechaEntrega && data.fechaEntrega !== '' ? data.fechaEntrega : undefined,
+        estado: data.estado,
+        precioEstimado: data.precioEstimado !== '' ? Number(data.precioEstimado) : undefined,
+        precioFinal: data.precioFinal !== '' ? Number(data.precioFinal) : undefined,
       };
+
+      console.log('Payload a enviar:', payload);
 
       if (editingReparacion) {
         await updateMutation.mutateAsync({
@@ -80,7 +93,7 @@ export const ReparacionesPage = () => {
           ...payload,
         });
       } else {
-        await createMutation.mutateAsync(payload as ReparacionCreate);
+        await createMutation.mutateAsync(payload);
       }
       handleCloseModal();
     } catch (error) {
@@ -98,11 +111,13 @@ export const ReparacionesPage = () => {
     setEditingReparacion(reparacion);
     setIsModalOpen(true);
     reset({
-      descripcion: reparacion.descripcion,
-      fechaIngreso: reparacion.fechaIngreso.split('T')[0],
-      fechaSalida: reparacion.fechaSalida?.split('T')[0] || '',
+      descripcionProblema: reparacion.descripcionProblema,
+      fechaIngreso: reparacion.fechaIngreso?.split('T')[0] || '',
+      fechaEstimadaEntrega: reparacion.fechaEstimadaEntrega?.split('T')[0] || '',
+      fechaEntrega: reparacion.fechaEntrega?.split('T')[0] || '',
       estado: reparacion.estado,
-      costo: reparacion.costo || '',
+      precioEstimado: reparacion.precioEstimado || '',
+      precioFinal: reparacion.precioFinal || '',
       equipoId: reparacion.equipoId,
     });
   };
@@ -119,27 +134,36 @@ export const ReparacionesPage = () => {
 
   const columns = [
     { header: 'ID', accessor: 'id' as const },
-    { header: 'Descripción', accessor: 'descripcion' as const },
+    { header: 'Descripción Problema', accessor: 'descripcionProblema' as const },
     {
       header: 'Fecha Ingreso',
-      accessor: (row: Reparacion) => new Date(row.fechaIngreso).toLocaleDateString(),
+      accessor: (row: Reparacion) => row.fechaIngreso ? new Date(row.fechaIngreso).toLocaleDateString() : '-',
     },
     {
-      header: 'Fecha Salida',
+      header: 'Fecha Est. Entrega',
       accessor: (row: Reparacion) =>
-        row.fechaSalida ? new Date(row.fechaSalida).toLocaleDateString() : '-',
+        row.fechaEstimadaEntrega ? new Date(row.fechaEstimadaEntrega).toLocaleDateString() : '-',
+    },
+    {
+      header: 'Fecha Entrega',
+      accessor: (row: Reparacion) =>
+        row.fechaEntrega ? new Date(row.fechaEntrega).toLocaleDateString() : '-',
     },
     {
       header: 'Estado',
-      accessor: (row: Reparacion) => (
+      accessor: (row: Reparacion) => row.estado ? (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${estadoColors[row.estado]}`}>
           {row.estado.replace('_', ' ')}
         </span>
-      ),
+      ) : '-',
     },
     {
-      header: 'Costo',
-      accessor: (row: Reparacion) => (row.costo ? `$${row.costo.toFixed(2)}` : '-'),
+      header: 'Precio Est.',
+      accessor: (row: Reparacion) => (row.precioEstimado ? `$${row.precioEstimado.toFixed(2)}` : '-'),
+    },
+    {
+      header: 'Precio Final',
+      accessor: (row: Reparacion) => (row.precioFinal ? `$${row.precioFinal.toFixed(2)}` : '-'),
     },
     {
       header: 'Equipo',
@@ -205,20 +229,20 @@ export const ReparacionesPage = () => {
               </select>
             </FormField>
 
-            <FormField label="Descripción" error={errors.descripcion?.message} required htmlFor="descripcion">
+            <FormField label="Descripción del Problema" error={errors.descripcionProblema?.message} required htmlFor="descripcionProblema">
               <textarea
-                id="descripcion"
+                id="descripcionProblema"
                 rows={3}
-                {...register('descripcion')}
+                {...register('descripcionProblema')}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.descripcion ? 'border-red-300' : 'border-gray-300'
+                  errors.descripcionProblema ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Describe el problema o trabajo a realizar"
               />
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Fecha Ingreso" error={errors.fechaIngreso?.message} required htmlFor="fechaIngreso">
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Fecha Ingreso" error={errors.fechaIngreso?.message} htmlFor="fechaIngreso">
                 <input
                   id="fechaIngreso"
                   type="date"
@@ -229,20 +253,31 @@ export const ReparacionesPage = () => {
                 />
               </FormField>
 
-              <FormField label="Fecha Salida" error={errors.fechaSalida?.message} htmlFor="fechaSalida">
+              <FormField label="Fecha Est. Entrega" error={errors.fechaEstimadaEntrega?.message} htmlFor="fechaEstimadaEntrega">
                 <input
-                  id="fechaSalida"
+                  id="fechaEstimadaEntrega"
                   type="date"
-                  {...register('fechaSalida')}
+                  {...register('fechaEstimadaEntrega')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                    errors.fechaSalida ? 'border-red-300' : 'border-gray-300'
+                    errors.fechaEstimadaEntrega ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+              </FormField>
+
+              <FormField label="Fecha Entrega" error={errors.fechaEntrega?.message} htmlFor="fechaEntrega">
+                <input
+                  id="fechaEntrega"
+                  type="date"
+                  {...register('fechaEntrega')}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
+                    errors.fechaEntrega ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
               </FormField>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Estado" error={errors.estado?.message} required htmlFor="estado">
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Estado" error={errors.estado?.message} htmlFor="estado">
                 <select
                   id="estado"
                   {...register('estado')}
@@ -250,22 +285,38 @@ export const ReparacionesPage = () => {
                     errors.estado ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
-                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="">Seleccione un estado</option>
+                  <option value="INGRESADO">Ingresado</option>
                   <option value="EN_PROCESO">En Proceso</option>
-                  <option value="COMPLETADA">Completada</option>
-                  <option value="CANCELADA">Cancelada</option>
+                  <option value="ESPERANDO_REPUESTO">Esperando Repuesto</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="ENTREGADO">Entregado</option>
                 </select>
               </FormField>
 
-              <FormField label="Costo" error={errors.costo?.message} htmlFor="costo">
+              <FormField label="Precio Estimado" error={errors.precioEstimado?.message} htmlFor="precioEstimado">
                 <input
-                  id="costo"
+                  id="precioEstimado"
                   type="number"
                   step="0.01"
                   min="0"
-                  {...register('costo', { valueAsNumber: true })}
+                  {...register('precioEstimado', { valueAsNumber: true })}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                    errors.costo ? 'border-red-300' : 'border-gray-300'
+                    errors.precioEstimado ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="0.00"
+                />
+              </FormField>
+
+              <FormField label="Precio Final" error={errors.precioFinal?.message} htmlFor="precioFinal">
+                <input
+                  id="precioFinal"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('precioFinal', { valueAsNumber: true })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
+                    errors.precioFinal ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="0.00"
                 />
