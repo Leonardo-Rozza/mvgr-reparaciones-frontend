@@ -1,0 +1,57 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../axios';
+import type { Equipo, EquipoCreate, EquipoUpdate } from '../../types';
+
+// Crear equipo
+const createEquipo = async (equipo: EquipoCreate): Promise<Equipo> => {
+  const { data } = await apiClient.post<Equipo>('/equipos', equipo);
+  return data;
+};
+
+// Actualizar equipo
+const updateEquipo = async (equipo: EquipoUpdate): Promise<Equipo> => {
+  const { data } = await apiClient.put<Equipo>(`/equipos/${equipo.id}`, equipo);
+  return data;
+};
+
+// Eliminar equipo
+const deleteEquipo = async (id: number): Promise<void> => {
+  await apiClient.delete(`/equipos/${id}`);
+};
+
+// Hook para crear equipo
+export const useCreateEquipoMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createEquipo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipos'] });
+    },
+  });
+};
+
+// Hook para actualizar equipo
+export const useUpdateEquipoMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: updateEquipo,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['equipos'] });
+      queryClient.invalidateQueries({ queryKey: ['equipo', data.id] });
+    },
+  });
+};
+
+// Hook para eliminar equipo
+export const useDeleteEquipoMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deleteEquipo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipos'] });
+    },
+  });
+};

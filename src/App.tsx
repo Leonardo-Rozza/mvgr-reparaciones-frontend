@@ -1,10 +1,8 @@
-function App() {
+import { RouterProvider } from 'react-router';
+import { router } from './router';
 
-  return (
-    <>
-      <h1>Empezando con el proyecto de mvgr reparaciones</h1>
-    </>
-  )
+function App() {
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default App;
