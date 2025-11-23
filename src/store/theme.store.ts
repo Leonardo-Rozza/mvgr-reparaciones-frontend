@@ -46,11 +46,13 @@ export const useThemeStore = create<ThemeState>((set) => ({
       persistTheme(theme);
     }
     set({ theme });
+    syncThemeClass(theme);
   },
   toggleTheme: () =>
     set((state) => {
       const nextTheme: Theme = state.theme === 'dark' ? 'light' : 'dark';
       persistTheme(nextTheme);
+      syncThemeClass(nextTheme);
       return { theme: nextTheme };
     }),
 }));
@@ -60,7 +62,13 @@ export const hasStoredThemePreference = () => getStoredTheme() !== null;
 export const syncThemeClass = (theme: Theme) => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  root.classList.toggle('dark', theme === 'dark');
+  const body = document.body;
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
+  body?.classList.toggle('dark', theme === 'dark');
   root.setAttribute('data-theme', theme);
 };
 

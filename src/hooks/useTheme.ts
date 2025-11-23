@@ -5,10 +5,6 @@ export const useTheme = () => {
   const { theme, setTheme, toggleTheme } = useThemeStore();
 
   useEffect(() => {
-    syncThemeClass(theme);
-  }, [theme]);
-
-  useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const listener = (event: MediaQueryListEvent) => {
       if (!hasStoredThemePreference()) {
@@ -18,6 +14,10 @@ export const useTheme = () => {
     mediaQuery.addEventListener('change', listener);
     return () => mediaQuery.removeEventListener('change', listener);
   }, [setTheme]);
+
+  useEffect(() => {
+    syncThemeClass(theme);
+  }, [theme]);
 
   return { theme, setTheme, toggleTheme };
 };
