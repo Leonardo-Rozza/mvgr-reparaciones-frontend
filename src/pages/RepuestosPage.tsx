@@ -15,7 +15,6 @@ import {
 } from '../api/mutations/repuestos.mutations';
 import type { Repuesto, RepuestoCreate } from '../types';
 
-// Schema de validación
 const repuestoSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   descripcion: z.string().optional().or(z.literal('')),
@@ -24,6 +23,11 @@ const repuestoSchema = z.object({
 });
 
 type RepuestoFormData = z.infer<typeof repuestoSchema>;
+
+const inputClasses = (hasError: boolean) =>
+  `w-full rounded-lg border px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 dark:text-gray-100 ${
+    hasError ? 'border-red-300 dark:border-red-400' : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
+  }`;
 
 export const RepuestosPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,29 +57,27 @@ export const RepuestosPage = () => {
   });
 
   const onSubmit = async (data: RepuestoFormData) => {
-    try {
-      // Limpiar campos opcionales vacíos
-      const payload: RepuestoCreate = {
-        nombre: data.nombre,
-        precio: data.precio,
-        descripcion: data.descripcion && data.descripcion.trim() !== '' ? data.descripcion : undefined,
-        reparacionId: (data.reparacionId !== undefined && data.reparacionId !== '') 
-          ? (typeof data.reparacionId === 'number' ? data.reparacionId : Number(data.reparacionId))
+    const payload: RepuestoCreate = {
+      nombre: data.nombre,
+      precio: data.precio,
+      descripcion: data.descripcion && data.descripcion.trim() !== '' ? data.descripcion : undefined,
+      reparacionId:
+        data.reparacionId !== undefined && data.reparacionId !== ''
+          ? typeof data.reparacionId === 'number'
+            ? data.reparacionId
+            : Number(data.reparacionId)
           : undefined,
-      };
+    };
 
-      if (editingRepuesto) {
-        await updateMutation.mutateAsync({
-          id: editingRepuesto.id,
-          ...payload,
-        });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
-      handleCloseModal();
-    } catch (error) {
-      console.error('Error al guardar repuesto:', error);
+    if (editingRepuesto) {
+      await updateMutation.mutateAsync({
+        id: editingRepuesto.id,
+        ...payload,
+      });
+    } else {
+      await createMutation.mutateAsync(payload);
     }
+    handleCloseModal();
   };
 
   const handleCloseModal = () => {
@@ -97,11 +99,7 @@ export const RepuestosPage = () => {
 
   const handleDelete = async (repuesto: Repuesto) => {
     if (window.confirm(`¿Estás seguro de eliminar el repuesto ${repuesto.nombre}?`)) {
-      try {
-        await deleteMutation.mutateAsync(repuesto.id);
-      } catch (error) {
-        console.error('Error al eliminar repuesto:', error);
-      }
+      await deleteMutation.mutateAsync(repuesto.id);
     }
   };
 
@@ -125,25 +123,24 @@ export const RepuestosPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Repuestos</h1>
-            <p className="text-gray-600 mt-1">Gestiona el inventario de repuestos</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Repuestos</h1>
+            <p className="text-gray-600 dark:text-gray-400">Gestiona el inventario de repuestos</p>
           </div>
           <button
+            type="button"
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-indigo-700 sm:w-auto"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Nuevo Repuesto
           </button>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
           <DataTable
             data={repuestos}
             columns={columns}
@@ -154,7 +151,6 @@ export const RepuestosPage = () => {
           />
         </div>
 
-        {/* Modal para crear/editar */}
         <Modal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
@@ -163,14 +159,7 @@ export const RepuestosPage = () => {
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormField label="Nombre" error={errors.nombre?.message} required htmlFor="nombre">
-              <input
-                id="nombre"
-                type="text"
-                {...register('nombre')}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.nombre ? 'border-red-300' : 'border-gray-300'
-                }`}
-              />
+              <input id="nombre" type="text" {...register('nombre')} className={inputClasses(!!errors.nombre)} />
             </FormField>
 
             <FormField label="Descripción" error={errors.descripcion?.message} htmlFor="descripcion">
@@ -178,9 +167,8 @@ export const RepuestosPage = () => {
                 id="descripcion"
                 rows={3}
                 {...register('descripcion')}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.descripcion ? 'border-red-300' : 'border-gray-300'
-                }`}
+                className={`${inputClasses(!!errors.descripcion)} resize-none`}
+                placeholder="Detalle opcional del repuesto"
               />
             </FormField>
 
@@ -191,42 +179,39 @@ export const RepuestosPage = () => {
                 step="0.01"
                 min="0"
                 {...register('precio', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.precio ? 'border-red-300' : 'border-gray-300'
-                }`}
+                className={inputClasses(!!errors.precio)}
                 placeholder="0.00"
               />
             </FormField>
 
-            <FormField label="Reparación ID" error={errors.reparacionId?.message} htmlFor="reparacionId">
+            <FormField label="Reparación asociada" error={errors.reparacionId?.message} htmlFor="reparacionId">
               <select
                 id="reparacionId"
                 {...register('reparacionId', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${
-                  errors.reparacionId ? 'border-red-300' : 'border-gray-300'
-                }`}
+                className={inputClasses(!!errors.reparacionId)}
               >
                 <option value="">Sin reparación asociada</option>
                 {reparaciones.map((reparacion) => (
                   <option key={reparacion.id} value={reparacion.id}>
-                    Reparación #{reparacion.id} - {reparacion.descripcionProblema.substring(0, 30)}...
+                    Reparación #{reparacion.id} - {reparacion.descripcionProblema.substring(0, 30)}
+                    {reparacion.descripcionProblema.length > 30 ? '…' : ''}
                   </option>
                 ))}
               </select>
             </FormField>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800 sm:w-auto"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-white transition hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
               >
                 {createMutation.isPending || updateMutation.isPending
                   ? 'Guardando...'

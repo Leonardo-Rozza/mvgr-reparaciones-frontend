@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 import type { Reparacion, ReparacionCreate, ReparacionUpdate } from '../../types';
+import { getErrorMessage, showError, showSuccess } from '../../utils/toast';
 
 // Crear reparación
 const createReparacion = async (reparacion: ReparacionCreate): Promise<Reparacion> => {
@@ -30,6 +31,10 @@ export const useCreateReparacionMutation = () => {
     mutationFn: createReparacion,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reparaciones'] });
+      showSuccess('Reparación creada');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo crear la reparación'));
     },
   });
 };
@@ -43,6 +48,10 @@ export const useUpdateReparacionMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['reparaciones'] });
       queryClient.invalidateQueries({ queryKey: ['reparacion', data.id] });
+      showSuccess('Reparación actualizada');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo actualizar la reparación'));
     },
   });
 };
@@ -55,6 +64,10 @@ export const useDeleteReparacionMutation = () => {
     mutationFn: deleteReparacion,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reparaciones'] });
+      showSuccess('Reparación eliminada');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo eliminar la reparación'));
     },
   });
 };

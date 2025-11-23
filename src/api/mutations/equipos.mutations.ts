@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 import type { Equipo, EquipoCreate, EquipoUpdate } from '../../types';
+import { getErrorMessage, showError, showSuccess } from '../../utils/toast';
 
 // Crear equipo
 const createEquipo = async (equipo: EquipoCreate): Promise<Equipo> => {
@@ -27,6 +28,10 @@ export const useCreateEquipoMutation = () => {
     mutationFn: createEquipo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
+      showSuccess('Equipo creado correctamente');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo crear el equipo'));
     },
   });
 };
@@ -40,6 +45,10 @@ export const useUpdateEquipoMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
       queryClient.invalidateQueries({ queryKey: ['equipo', data.id] });
+      showSuccess('Equipo actualizado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo actualizar el equipo'));
     },
   });
 };
@@ -52,6 +61,10 @@ export const useDeleteEquipoMutation = () => {
     mutationFn: deleteEquipo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equipos'] });
+      showSuccess('Equipo eliminado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo eliminar el equipo'));
     },
   });
 };

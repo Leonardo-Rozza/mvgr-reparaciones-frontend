@@ -1,30 +1,28 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router';
 import { useLoginMutation } from '../api/mutations/auth.mutations';
 import { useAuth } from '../store/auth.store';
-import { useState } from 'react';
 
-// Schema de validación con Zod
 const loginSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'El nombre de usuario es requerido')
-    .min(3, 'El nombre de usuario debe tener al menos 3 caracteres'),
-  password: z
-    .string()
-    .min(1, 'La contraseña es requerida')
-    .min(4, 'La contraseña debe tener al menos 4 caracteres'),
+  username: z.string().min(1, 'El nombre de usuario es requerido').min(3, 'Debe tener al menos 3 caracteres'),
+  password: z.string().min(1, 'La contraseña es requerida').min(4, 'Debe tener al menos 4 caracteres'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+const inputClasses = (hasError: boolean) =>
+  `w-full rounded-xl border px-4 py-3 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 dark:text-gray-100 ${
+    hasError ? 'border-red-300 dark:border-red-400' : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
+  }`;
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
+
   const {
     register,
     handleSubmit,
@@ -38,56 +36,46 @@ export const LoginPage = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setErrorMessage(null);
-      console.log('Intentando login con:', { username: data.username });
-      console.log('URL base:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api');
-      
       const response = await loginMutation.mutateAsync(data);
-      console.log('Respuesta del login:', response);
-      
-      // Manejar diferentes estructuras de respuesta del backend
-      // Puede venir como: { token, username } o { accessToken, user } o { jwt, username } etc.
-      const token = response.token || (response as any).accessToken || (response as any).jwt || (response as any).token;
-      const username = response.username || (response as any).user || (response as any).userName || data.username;
-      
+      const extraFields = response as unknown as Record<string, unknown>;
+      const token =
+        response.token ||
+        (typeof extraFields.accessToken === 'string' ? (extraFields.accessToken as string) : undefined) ||
+        (typeof extraFields.jwt === 'string' ? (extraFields.jwt as string) : undefined);
+      const username =
+        response.username ||
+        (typeof extraFields.user === 'string' ? (extraFields.user as string) : undefined) ||
+        (typeof extraFields.userName === 'string' ? (extraFields.userName as string) : undefined) ||
+        data.username;
+
       if (!token) {
-        console.error('No se recibió token en la respuesta:', response);
-        setErrorMessage('Error: El servidor no devolvió un token de autenticación.');
+        setErrorMessage('El servidor no devolvió un token de autenticación.');
         return;
       }
-      
-      // Guardar token y usuario en Zustand
+
       login(token, username);
-      
-      // Redirigir al dashboard
       navigate('/dashboard', { replace: true });
-    } catch (error: unknown) {
-      console.error('Error completo en login:', error);
-      
-      // Manejar errores
+    } catch (error) {
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { 
-          response?: { 
+        const axiosError = error as {
+          response?: {
             status?: number;
             data?: { message?: string; error?: string };
             statusText?: string;
           };
           message?: string;
         };
-        
-        console.error('Status:', axiosError.response?.status);
-        console.error('Data:', axiosError.response?.data);
-        
-        const errorMsg = 
-          axiosError.response?.data?.message || 
+
+        const message =
+          axiosError.response?.data?.message ||
           axiosError.response?.data?.error ||
           axiosError.response?.statusText ||
-          `Error ${axiosError.response?.status || 'desconocido'}` ||
+          axiosError.message ||
           'Error al iniciar sesión. Verifica tus credenciales.';
-        
-        setErrorMessage(errorMsg);
+
+        setErrorMessage(message);
       } else if (error && typeof error === 'object' && 'message' in error) {
-        const err = error as { message?: string };
-        setErrorMessage(err.message || 'Error de conexión. Verifica que el backend esté corriendo.');
+        setErrorMessage((error as { message?: string }).message || 'Error de conexión. Verifica que el backend esté disponible.');
       } else {
         setErrorMessage('Error al iniciar sesión. Intenta nuevamente.');
       }
@@ -95,34 +83,33 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl">
-        {/* Header */}
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Sistema de Reparaciones
-          </h2>
-          <p className="text-gray-600">
-            Inicia sesión para continuar
+    <div className="min-h-screen bg-gradient-to-b from-indigo-100 via-white to-white px-4 py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 lg:flex-row lg:justify-between">
+        <div className="w-full max-w-md space-y-4 text-center lg:text-left">
+          <p className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-600 dark:bg-indigo-900/60 dark:text-indigo-200">
+            MVGR Reparaciones
+          </p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">Bienvenido al panel administrativo</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Gestiona clientes, equipos, reparaciones y repuestos desde un solo lugar. Inicia sesión para continuar.
           </p>
         </div>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-          {/* Mensaje de error */}
-          {errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {errorMessage}
-            </div>
-          )}
+        <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+          <div className="space-y-1 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Iniciar sesión</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Ingresa tus credenciales para acceder al sistema</p>
+          </div>
 
-          <div className="space-y-4">
-            {/* Campo Username */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+            {errorMessage && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Nombre de usuario
               </label>
               <input
@@ -130,27 +117,15 @@ export const LoginPage = () => {
                 type="text"
                 autoComplete="username"
                 {...register('username')}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
-                  errors.username
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300 bg-white'
-                }`}
+                className={inputClasses(!!errors.username)}
                 placeholder="Ingresa tu usuario"
                 disabled={isSubmitting}
               />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.username.message}
-                </p>
-              )}
+              {errors.username && <p className="text-sm text-red-500 dark:text-red-400">{errors.username.message}</p>}
             </div>
 
-            {/* Campo Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Contraseña
               </label>
               <input
@@ -158,64 +133,23 @@ export const LoginPage = () => {
                 type="password"
                 autoComplete="current-password"
                 {...register('password')}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition ${
-                  errors.password
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300 bg-white'
-                }`}
+                className={inputClasses(!!errors.password)}
                 placeholder="Ingresa tu contraseña"
                 disabled={isSubmitting}
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
+              {errors.password && <p className="text-sm text-red-500 dark:text-red-400">{errors.password.message}</p>}
             </div>
-          </div>
 
-          {/* Botón de submit */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? (
-              <span className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Iniciando sesión...
-              </span>
-            ) : (
-              'Iniciar sesión'
-            )}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="text-center text-sm text-gray-500 mt-6">
-          <p>Acceso restringido - Solo personal autorizado</p>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   );
 };
-

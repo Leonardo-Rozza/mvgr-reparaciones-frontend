@@ -26,28 +26,28 @@ export function DataTable<T extends { id: number }>({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="py-12 text-center text-gray-500 dark:text-gray-400">
         <p>{emptyMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="w-full overflow-x-auto rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <thead className="bg-gray-50 dark:bg-gray-800/60">
           <tr>
             {columns.map((column, index) => (
               <th
                 key={index}
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 ${
                   column.className || ''
                 }`}
               >
@@ -55,19 +55,19 @@ export function DataTable<T extends { id: number }>({
               </th>
             ))}
             {(onEdit || onDelete) && (
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
                 Acciones
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-800 dark:bg-gray-900">
           {data.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
+            <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
               {columns.map((column, index) => (
                 <td
                   key={index}
-                  className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                  className={`whitespace-nowrap px-4 py-3 text-sm text-gray-900 dark:text-gray-100 ${
                     column.className || ''
                   }`}
                 >
@@ -77,12 +77,12 @@ export function DataTable<T extends { id: number }>({
                 </td>
               ))}
               {(onEdit || onDelete) && (
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium">
                   <div className="flex items-center gap-2">
                     {onEdit && (
                       <button
                         onClick={() => onEdit(row)}
-                        className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                        className="text-indigo-600 transition-colors hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                         title="Editar"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +98,7 @@ export function DataTable<T extends { id: number }>({
                     {onDelete && (
                       <button
                         onClick={() => onDelete(row)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
+                        className="text-red-600 transition-colors hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Eliminar"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

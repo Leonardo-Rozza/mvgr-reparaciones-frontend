@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 import type { Cliente, ClienteCreate, ClienteUpdate } from '../../types';
+import { getErrorMessage, showError, showSuccess } from '../../utils/toast';
 
 // Crear cliente
 const createCliente = async (cliente: ClienteCreate): Promise<Cliente> => {
@@ -27,6 +28,10 @@ export const useCreateClienteMutation = () => {
     mutationFn: createCliente,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      showSuccess('Cliente creado correctamente');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo crear el cliente'));
     },
   });
 };
@@ -40,6 +45,10 @@ export const useUpdateClienteMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
       queryClient.invalidateQueries({ queryKey: ['cliente', data.id] });
+      showSuccess('Cliente actualizado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo actualizar el cliente'));
     },
   });
 };
@@ -52,6 +61,10 @@ export const useDeleteClienteMutation = () => {
     mutationFn: deleteCliente,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      showSuccess('Cliente eliminado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo eliminar el cliente'));
     },
   });
 };

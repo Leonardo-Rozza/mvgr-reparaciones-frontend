@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 import type { LoginRequest, LoginResponse } from '../../types';
+import { getErrorMessage, showError, showSuccess } from '../../utils/toast';
 
 // Función para hacer login
 const loginUser = async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -19,6 +20,12 @@ const loginUser = async (credentials: LoginRequest): Promise<LoginResponse> => {
 export const useLoginMutation = () => {
   return useMutation({
     mutationFn: loginUser,
+    onSuccess: () => {
+      showSuccess('Sesión iniciada correctamente');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'Credenciales inválidas o servidor no disponible'));
+    },
   });
 };
 

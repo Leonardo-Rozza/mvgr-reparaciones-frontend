@@ -13,13 +13,13 @@ export const FormField = ({ label, error, required, children, htmlFor }: FormFie
     <div className="space-y-1">
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-medium text-gray-700"
+        className="block text-sm font-medium text-gray-700 dark:text-gray-200"
       >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="ml-1 text-red-500">*</span>}
       </label>
       {children}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
     </div>
   );
 };

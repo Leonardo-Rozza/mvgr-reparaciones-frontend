@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 import type { Repuesto, RepuestoCreate, RepuestoUpdate } from '../../types';
+import { getErrorMessage, showError, showSuccess } from '../../utils/toast';
 
 // Crear repuesto
 const createRepuesto = async (repuesto: RepuestoCreate): Promise<Repuesto> => {
@@ -27,6 +28,10 @@ export const useCreateRepuestoMutation = () => {
     mutationFn: createRepuesto,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repuestos'] });
+      showSuccess('Repuesto creado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo crear el repuesto'));
     },
   });
 };
@@ -40,6 +45,10 @@ export const useUpdateRepuestoMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['repuestos'] });
       queryClient.invalidateQueries({ queryKey: ['repuesto', data.id] });
+      showSuccess('Repuesto actualizado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo actualizar el repuesto'));
     },
   });
 };
@@ -52,6 +61,10 @@ export const useDeleteRepuestoMutation = () => {
     mutationFn: deleteRepuesto,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repuestos'] });
+      showSuccess('Repuesto eliminado');
+    },
+    onError: (error) => {
+      showError(getErrorMessage(error, 'No se pudo eliminar el repuesto'));
     },
   });
 };
